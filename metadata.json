@@ -1,0 +1,8 @@
+{
+  "name": "Tickerline — US USDT Lending Platform",
+  "description": "Production-oriented digital lending platform for eligible US residents providing non-collateralized USDT loans with legally compliant underwriting, full disclosures, and transparent loan management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

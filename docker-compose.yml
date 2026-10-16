@@ -1,0 +1,61 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tickerline-app
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - RUN_SERVER=true
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-tickerline_admin}:${POSTGRES_PASSWORD:-ChangeMeSecurely!}@postgres:5432/${POSTGRES_DB:-tickerline_db}
+      - JWT_SECRET=${JWT_SECRET:-please_generate_a_64_char_crypto_random_secret}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://tickerline.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tickerline-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tickerline-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tickerline_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeSecurely!}
+      POSTGRES_DB: ${POSTGRES_DB:-tickerline_db}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tickerline_admin} -d ${POSTGRES_DB:-tickerline_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tickerline-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: tickerline-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    networks:
+      - tickerline-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  tickerline-network:
+    driver: bridge
